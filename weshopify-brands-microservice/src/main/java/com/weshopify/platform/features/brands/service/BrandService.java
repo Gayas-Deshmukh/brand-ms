@@ -11,11 +11,14 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.weshopify.platform.features.brands.bean.BrandBean;
 import com.weshopify.platform.features.brands.domain.Brand;
 import com.weshopify.platform.features.brands.exceptions.BrandNotFoundException;
+import com.weshopify.platform.features.brands.outbound.CartegoryFeignClient;
 import com.weshopify.platform.features.brands.outbound.CategoriesOutboundService;
 import com.weshopify.platform.features.brands.repo.BrandRepository;
 
@@ -31,6 +34,9 @@ public class BrandService {
 	
 	@Autowired
 	private CategoriesOutboundService categoryOutboundService;
+	
+	@Autowired
+	private CartegoryFeignClient categoryFeignClient;
 
 	public List<Brand> listAll() {
 		return (List<Brand>) repo.findAll();
@@ -106,8 +112,14 @@ public class BrandService {
 			{
 				JSONObject jsonOb = array.getJSONObject(i);
 				int catId = jsonOb.getInt("id");
-				String catData = categoryOutboundService.findCategoryById(catId);
-				catOriginalData.add(catData);
+				//String catData = categoryOutboundService.findCategoryById(catId);	
+				ResponseEntity<String> catResp = categoryFeignClient.findCategoryById(catId);
+				
+				if (catResp.getStatusCode() == HttpStatus.OK)
+				{
+					String catData = catResp.getBody();
+					catOriginalData.add(catData);
+				}
 			}
 			/*
 			 * Set<Category> catDomainSet = new HashSet<>(); catset.forEach(catBean -> {
